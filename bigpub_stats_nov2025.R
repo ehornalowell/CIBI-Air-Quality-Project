@@ -1,6 +1,5 @@
 ########################  set working environment ################################
 
-setwd("./CIBI BOLD ANALYSIS/BIGPUB")
 
 rm(list = ls()) # clear working environment
 
