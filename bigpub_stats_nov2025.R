@@ -16,7 +16,7 @@ library(dplyr)
 
 ####### 1. Load BOLD data 
 
-all_sdnhm <- read.csv("BOLD_SDNHM_all_final_Nov2025.csv")
+all_sdnhm <- read.csv("https://raw.githubusercontent.com/ehornalowell/CIBI-Air-Quality-Project/main/BOLD_SDNHM_all_final_Nov2025.csv")
 
 #filter Exact.site for observatory sites (5)
 sdnhm_obs <- filter(all_sdnhm, Exact_site %in% c("Tierra_Del_Sol_SDAA", "Lopez_Ridge_Vernal_Pools", "Picacho_State_Park", "Wheatley_Ranch", "Anza_Borrego_UC_Reserve"))
