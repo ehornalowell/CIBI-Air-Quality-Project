@@ -154,5 +154,76 @@ sdnhm_noNABINs <- sdnhm_obs_mal %>%
         fill = ""
       )
 
-############    
+# 3e. recreate figure from above, but for each of the 5 observatory sites 
+    tax_levels <- c("Order", "Family", "Subfamily", "Genus", "Species")
     
+    tax_summary_site <- clean_sdnhm_noNABIN %>%
+      # keep only site + the taxonomy columns we care about
+      select(Exact.Site, all_of(tax_levels)) %>%
+      
+      # go to long format: one row per specimen × taxonomic level
+      pivot_longer(
+        cols = all_of(tax_levels),
+        names_to = "Taxonomic_Level",
+        values_to = "Taxon"
+      ) %>%
+      
+      # group by site and taxonomic level
+      group_by(Exact.Site, Taxonomic_Level) %>%
+      summarise(
+        Total = n(),  # total specimens at this site for this level
+        Identified = sum(!is.na(Taxon) & Taxon != ""),
+        Not_Identified = Total - Identified,
+        .groups = "drop"
+      ) %>%
+      
+      # wide → long for plotting identified vs not
+      pivot_longer(
+        cols = c(Identified, Not_Identified),
+        names_to = "Status",
+        values_to = "Count"
+      ) %>%
+      
+      # order taxonomic levels for the x-axis
+      mutate(
+        Taxonomic_Level = factor(
+          Taxonomic_Level,
+          levels = c("Order", "Family", "Subfamily", "Genus", "Species")
+        )
+      )
+    ##plot faceted fig!
+    ggplot(tax_summary_site,
+           aes(x = Taxonomic_Level, y = Count, fill = Status)) +
+      geom_col() +
+      facet_grid(. ~ Exact.Site, scales = "fixed", switch = "x") +
+      theme_classic() +
+      theme(
+        axis.text.x = element_text(angle = 45, hjust = 1),
+        strip.placement = "outside"
+      ) +
+      labs(
+        x = "Taxonomic Level",
+        y = "Number of Specimens",
+        fill = ""
+      )
+    
+######### 4. calculating diversity measures
+
+# 4a. Calculating Abundance for every unique month_year * exact.site combination (aka for every month at every site)
+    abund <- clean_sdnhm_noNABIN %>%
+      group_by(Exact.Site, Month_Year)%>%
+      summarize(Abundance = n(),
+                .groups = "drop")
+      
+# 4b. Calculating Species Richness for every unique month_year * exact.site combination (aka for every month at every site)
+   spr <- clean_sdnhm_noNABIN %>%
+     group_by(Exact.Site, Month_Year) %>%
+     summarize(Species_Richness = n_distinct(BIN),
+               .groups = "drop")
+# 4c. Calculating Shannon Diversity Index
+   
+   # joining column back to original dataframe clean_sdnhm_noNABIN
+   #clean_sdnhm_noNABIN <- clean_sdnhm_noNABIN %>%
+     #left_join(spr, by = c("Exact.Site", "Month_Year"))
+
+
