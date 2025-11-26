@@ -10,7 +10,7 @@ rm(list = ls()) # clear working environment
 library(dplyr) #QC/QA
 library(tidyr) #QC/QA
 library(ggplot2) # figs
-library(patchwork) # simple way to combine separate ggplots into same graphic
+#library(patchwork) # simple way to combine separate ggplots into same graphic
 library(vegan) # shannon diversity calculation
 library(lubridate) # formatting dates 
 
