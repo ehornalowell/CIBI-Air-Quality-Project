@@ -7,9 +7,13 @@ rm(list = ls()) # clear working environment
 ############################################################################################
 ############################## load packages ###########################################
 
-library(dplyr)
-library(ggplot2)
-library(tidyr)
+library(dplyr) #QC/QA
+library(tidyr) #QC/QA
+library(ggplot2) # figs
+library(patchwork) # simple way to combine separate ggplots into same graphic
+library(vegan) # shannon diversity calculation
+library(lubridate) # formatting dates 
+
 
 
 #########################################################################################
@@ -207,6 +211,7 @@ sdnhm_noNABINs <- sdnhm_obs_mal %>%
         fill = ""
       )
     
+    
 ######### 4. calculating diversity measures
 
 # 4a. Calculating Abundance for every unique month_year * exact.site combination (aka for every month at every site)
@@ -214,16 +219,238 @@ sdnhm_noNABINs <- sdnhm_obs_mal %>%
       group_by(Exact.Site, Month_Year)%>%
       summarize(Abundance = n(),
                 .groups = "drop")
+    
+    #joining column back to original dataframe clean_sdnhm_noNABIN
+    clean_sdnhm_noNABIN <- clean_sdnhm_noNABIN %>%
+      left_join(abund, by = c("Exact.Site", "Month_Year"))
       
 # 4b. Calculating Species Richness for every unique month_year * exact.site combination (aka for every month at every site)
    spr <- clean_sdnhm_noNABIN %>%
      group_by(Exact.Site, Month_Year) %>%
      summarize(Species_Richness = n_distinct(BIN),
                .groups = "drop")
-# 4c. Calculating Shannon Diversity Index
    
    # joining column back to original dataframe clean_sdnhm_noNABIN
-   #clean_sdnhm_noNABIN <- clean_sdnhm_noNABIN %>%
-     #left_join(spr, by = c("Exact.Site", "Month_Year"))
+   clean_sdnhm_noNABIN <- clean_sdnhm_noNABIN %>%
+   left_join(spr, by = c("Exact.Site", "Month_Year"))
+   
+# 4c. Calculating Shannon Diversity Index
+ 
+   sdiv <- clean_sdnhm_noNABIN %>%
+     #count individuals per bin per site per month
+     group_by(Exact.Site, Month_Year, BIN) %>%
+     summarise(BIN_Abundance = n(), 
+               .groups = "drop") %>%
+     #now calculate shannon per site * month 
+     group_by(Exact.Site, Month_Year) %>%
+     summarise(Shannon.Diversity = diversity(BIN_Abundance, index = "shannon"),
+               .groups = "drop")
 
+  # add shannon diversity index to clean_sdnhm_noNABIN dataframe 
+   clean_sdnhm_noNABIN <- clean_sdnhm_noNABIN %>%
+     left_join(sdiv, by = c("Exact.Site", "Month_Year"))
 
+######################################################################################################################
+##################################### Load in PM2.5 data ############################################################# 
+   
+####### 5. Load pm2.5 data from github repo
+pm2.5 <- read.csv("https://raw.githubusercontent.com/ehornalowell/CIBI-Air-Quality-Project/main/SDNHM.sites_V5GL0502.csv")
+   
+###### 6. CLEAN pm2.5 data
+
+# 6a. convert month column format to month_year 
+   pm2.5_dates <- pm2.5  %>%
+     mutate(
+       Month_Year = format(as.Date(month, format = "%m/%d/%Y"), "%b-%y")
+     )
+# 6b. Change Tierra Del Sol to Tierra Del Sol SDAA to match clean_sdnhm_noNABIN dataframe before merging
+   pm2.5_dates <- pm2.5_dates %>%
+     mutate(Exact.Site = recode(Exact.Site,
+                                       "Tierra Del Sol" = "Tierra Del Sol SDAA"))
+   
+# 6c. remove columns i don't need for analysis
+   clean_pm2.5 <- pm2.5_dates %>%
+     select(-c("month", "Site.Code"))
+
+# 6d. combine clean_pm2.5 dataframe and clean_sdnhm_noNABIN dataframe 
+   combined_poll.div <- clean_sdnhm_noNABIN %>%
+     left_join(clean_pm2.5, by = c("Exact.Site", "Month_Year"))
+
+# 6e. create dataframe with date, site, diversity measures, pm2.5 measures
+   site_month_dataUSE <- combined_poll.div %>%
+     group_by(Exact.Site, Month_Year) %>%
+     slice(1L) %>%                 # keep just 1 row per site-month-- can do this because same value for abundance, sp richness, shannon diversity, and pm2.5 for all rows belonging to same site*date combo
+     ungroup() %>%
+     select(
+       Exact.Site,
+       Month_Year,
+       Abundance,
+       Species_Richness,
+       Shannon.Diversity,
+       GWRPM25.ugm.3
+     )
+
+   
+###########################################################################################################################
+################################## Insect diversity and PM2.5 data visualization ############################################
+   
+######## 7. Plot shannon div with pm2.5 across dates for each site
+   
+# 7a. convert month_date into real dates and put them in chronological order
+   
+   site_month_dataUSE <- site_month_dataUSE %>%
+     mutate(
+       Month_Year_date = parse_date_time(Month_Year, "b-y") # "Aug-22" is a real date
+     ) %>%
+     arrange(Month_Year_date) %>%
+     mutate(Month_Year = factor(Month_Year, levels = unique(Month_Year)))
+   
+# 7b. compute scaling factor for PM2.5 so that it is correctly positioned (vertically wise) on right y-axis.
+   max_shannon <- max(site_month_dataUSE$Shannon.Diversity, na.rm = TRUE)
+   max_pm25    <- max(site_month_dataUSE$GWRPM25.ugm.3,      na.rm = TRUE)
+   
+   scale_factor <- max_shannon / max_pm25
+   
+# 7c.   create facetted dual-axis plot
+   p_shann <- ggplot(site_month_dataUSE, aes(x = Month_Year, color = Exact.Site)) +
+     # Shannon diversity — solid line
+     geom_line(
+       aes(y = Shannon.Diversity, group = Exact.Site),
+       size = 1
+     ) +
+     geom_point(
+       aes(y = Shannon.Diversity, group = Exact.Site),
+       size = 2
+     ) +
+     # PM2.5 — dashed line, same color as site
+     geom_line(
+       aes(y = GWRPM25.ugm.3 * scale_factor, group = Exact.Site),
+       linetype = "dashed",
+       size = 0.9
+     ) +
+     geom_point(
+       aes(y = GWRPM25.ugm.3 * scale_factor, group = Exact.Site),
+       shape = 1,   # hollow points so they look different
+       size = 2
+     ) +
+     scale_y_continuous(
+       name = "Shannon diversity",
+       sec.axis = sec_axis(
+         ~ . / scale_factor,
+         name = "PM2.5 (µg/m³)"
+       )
+     ) +
+     facet_wrap(~ Exact.Site, ncol = 1) +  # or ncol = 2 if you prefer a grid
+     labs(
+       x = "Date",
+       color = "Site",
+       title = "Shannon diversity vs. PM2.5"
+     ) +
+     theme_classic() +
+     theme(
+       axis.text.x = element_text(angle = 45, hjust = 1),
+       legend.position = "bottom"
+     )
+   
+   
+######## 8. Plot Species_Richness with pm2.5 across dates for each site   
+
+# 8a. Computing scaling factor for PM2.5       
+   max_Sp_Richness <- max(site_month_dataUSE$Species_Richness, na.rm = TRUE)
+   #use max pm2.5 from step 7b.
+   
+   scale_factor.b <- max_Sp_Richness / max_pm25
+   
+# 8b. create facetted dual axis plot- sp. richness and pm2.5 values over time. 
+  p_rich <- ggplot(site_month_dataUSE, aes(x = Month_Year, color = Exact.Site)) +
+     # Shannon diversity — solid line
+     geom_line(
+       aes(y = Species_Richness, group = Exact.Site),
+       size = 1
+     ) +
+     geom_point(
+       aes(y = Species_Richness, group = Exact.Site),
+       size = 2
+     ) +
+     # PM2.5 — dashed line, same color as site
+     geom_line(
+       aes(y = GWRPM25.ugm.3 * scale_factor.b, group = Exact.Site),
+       linetype = "dashed",
+       size = 0.9
+     ) +
+     geom_point(
+       aes(y = GWRPM25.ugm.3 * scale_factor.b, group = Exact.Site),
+       shape = 1,   # hollow points so they look different
+       size = 2
+     ) +
+     scale_y_continuous(
+       name = "Species Richness",
+       sec.axis = sec_axis(
+         ~ . / scale_factor.b,
+         name = "PM2.5 (µg/m³)"
+       )
+     ) +
+     facet_wrap(~ Exact.Site, ncol = 1) +  # or ncol = 2 if you prefer a grid
+     labs(
+       x = "Date",
+       color = "Site",
+       title = "Species richness vs. PM2.5"
+     ) +
+     theme_classic() +
+     theme(
+       axis.text.x = element_text(angle = 45, hjust = 1),
+       legend.position = "bottom"
+     )
+
+########## 9. Plot Abundance with pm2.5 across dates for each site   
+
+# 9a. Computing scaling factor for PM2.5       
+   max_Abundance <- max(site_month_dataUSE$Abundance, na.rm = TRUE)
+   #use max pm2.5 from step 7b.
+   
+   scale_factor.c <- max_Abundance / max_pm25
+   
+   # 8b. create faceted dual axis plot- abundance and pm2.5 values over time. 
+  p_abund <- ggplot(site_month_dataUSE, aes(x = Month_Year, color = Exact.Site)) +
+     # Shannon diversity — solid line
+     geom_line(
+       aes(y = Abundance, group = Exact.Site),
+       size = 1
+     ) +
+     geom_point(
+       aes(y = Abundance, group = Exact.Site),
+       size = 2
+     ) +
+     # PM2.5 — dashed line, same color as site
+     geom_line(
+       aes(y = GWRPM25.ugm.3 * scale_factor.c, group = Exact.Site),
+       linetype = "dashed",
+       size = 0.9
+     ) +
+     geom_point(
+       aes(y = GWRPM25.ugm.3 * scale_factor.c, group = Exact.Site),
+       shape = 1,   # hollow points so they look different
+       size = 2
+     ) +
+     scale_y_continuous(
+       name = "Abundance",
+       sec.axis = sec_axis(
+         ~ . / scale_factor.c,
+         name = "PM2.5 (µg/m³)"
+       )
+     ) +
+     facet_wrap(~ Exact.Site, ncol = 1) +  # or ncol = 2 if you prefer a grid
+     labs(
+       x = "Date",
+       color = "Site",
+       title = "Abundance vs. PM2.5"
+     ) +
+     theme_classic() +
+     theme(
+       axis.text.x = element_text(angle = 45, hjust = 1),
+       legend.position = "bottom"
+     )
+   
+
+   
+   
