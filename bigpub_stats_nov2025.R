@@ -13,6 +13,7 @@ library(ggplot2) # figs
 #library(patchwork) # simple way to combine separate ggplots into same graphic
 library(vegan) # shannon diversity calculation
 library(lubridate) # formatting dates 
+library(purrr)
 
 
 
@@ -313,6 +314,10 @@ pm2.5 <- read.csv("https://raw.githubusercontent.com/ehornalowell/CIBI-Air-Quali
      )
 
 # 6f. create dataframe with date, site, order, diversity measures, pm2.5 measures. 
+   site_month_order_div_df <- list(sdiv_orders, spr_orders, abund_orders) %>%   # first all diversity measures 
+     reduce(left_join, by = c("Exact.Site", "Month_Year", "Order"))
+   site_month_order_df <- site_month_order_div_df %>%                           # add pm2.5 data
+     left_join(clean_pm2.5, by = c("Exact.Site", "Month_Year"))
    
 ###########################################################################################################################
 ################################## Insect diversity and PM2.5 data visualization ############################################
@@ -375,18 +380,72 @@ pm2.5 <- read.csv("https://raw.githubusercontent.com/ehornalowell/CIBI-Air-Quali
        legend.position = "bottom"
      )
 
-#7d. scatterplot 
+# 7d. scatterplot 
     ggplot(site_month_dataUSE, aes(x = GWRPM25.ugm.3, y = Shannon.Diversity, color = Exact.Site)) +
       geom_point(
         aes(group = Exact.Site)
-      ) +
-      geom_line(
-        aes(group = Exact.Site),
-        size = 2
-      ) +
+      ) #
+     # geom_line(
+     #   aes(group = Exact.Site),
+     #   size = 2
+     # ) +
       theme_classic()
    
-   
+
+# 7e. scatterplot for dip, lep, coleo
+      ## Diptera: 
+          site_month_order_df %>%
+            mutate(highlight = ifelse(Order == "Diptera", "Diptera", "Other")) %>%
+            ggplot(aes(x = GWRPM25.ugm.3, y = Shannon_Diversity, color = highlight)) +
+            geom_point() +
+            scale_color_manual(values = c("Diptera" = "blue4", "Other" = "lightgrey")) +
+            theme_classic() +
+            labs(color = "")
+      ## Lepidoptera: 
+          site_month_order_df %>%
+            mutate(highlight = ifelse(Order == "Lepidoptera", "Lepidoptera", "Other")) %>%
+            ggplot(aes(x = GWRPM25.ugm.3, y = Shannon_Diversity, color = highlight)) +
+            geom_point() +
+            scale_color_manual(values = c("Lepidoptera" = "purple3", "Other" = "lightgrey")) +
+            theme_classic() +
+            labs(color = "")
+      ## Coleoptera:
+          site_month_order_df %>%
+            mutate(highlight = ifelse(Order == "Coleoptera", "Coleoptera", "Other")) %>%
+            ggplot(aes(x = GWRPM25.ugm.3, y = Shannon_Diversity, color = highlight)) +
+            geom_point() +
+            scale_color_manual(values = c("Coleoptera" = "red", "Other" = "lightgrey")) +
+            theme_classic() +
+            labs(color = "")
+      ## Hymenoptera    
+          site_month_order_df %>%
+            mutate(highlight = ifelse(Order == "Hymenoptera", "Hymenoptera", "Other")) %>%
+            ggplot(aes(x = GWRPM25.ugm.3, y = Shannon_Diversity, color = highlight)) +
+            geom_point() +
+            scale_color_manual(values = c("Hymenoptera" = "turquoise3", "Other" = "lightgrey")) +
+            theme_classic() +
+            labs(color = "")
+
+# 7f. all four orders, dip, lep, coleo, hym on same fig - scatterplot, pm2.5 vs shannon div.
+          
+  # Define your 4 focal orders + their colors
+  focal_colors <- c(
+    "Diptera"       = "blue4",
+    "Lepidoptera"   = "purple3",
+    "Coleoptera"    = "red",
+    "Hymenoptera"   = "turquoise3",
+    "Other"         = "lightgrey"
+  )
+  #fig
+  site_month_order_df %>%
+    mutate(Order_group = ifelse(Order %in% names(focal_colors)[1:4], Order, "Other")) %>%
+    ggplot(aes(x = GWRPM25.ugm.3, y = Shannon_Diversity, color = Order_group)) +
+    geom_point() +
+    scale_color_manual(values = focal_colors) +
+    theme_classic() +
+    labs(color = "Order")
+
+
 ######## 8. Plot Species_Richness with pm2.5 across dates for each site   
 
 # 8a. Computing scaling factor for PM2.5       
@@ -498,7 +557,6 @@ pm2.5 <- read.csv("https://raw.githubusercontent.com/ehornalowell/CIBI-Air-Quali
      )
    
 # 9c. Scatterplot
-
   ggplot(site_month_dataUSE, aes(x = GWRPM25.ugm.3, y = Abundance, color = Exact.Site)) +
     geom_point(
       aes(group = Exact.Site)
