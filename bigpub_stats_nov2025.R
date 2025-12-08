@@ -351,6 +351,17 @@ pm2.5 <- read.csv("https://raw.githubusercontent.com/ehornalowell/CIBI-Air-Quali
        axis.text.x = element_text(angle = 45, hjust = 1),
        legend.position = "bottom"
      )
+
+#7d. scatterplot 
+    ggplot(site_month_dataUSE, aes(x = GWRPM25.ugm.3, y = Shannon.Diversity, color = Exact.Site)) +
+      geom_point(
+        aes(group = Exact.Site)
+      ) +
+      geom_line(
+        aes(group = Exact.Site),
+        size = 2
+      ) +
+      theme_classic()
    
    
 ######## 8. Plot Species_Richness with pm2.5 across dates for each site   
@@ -402,6 +413,18 @@ pm2.5 <- read.csv("https://raw.githubusercontent.com/ehornalowell/CIBI-Air-Quali
        legend.position = "bottom"
      )
 
+# 8c. scatterplot 
+  ggplot(site_month_dataUSE, aes(x = GWRPM25.ugm.3, y = Species_Richness, color = Exact.Site)) +
+    geom_point(
+      aes(group = Exact.Site)
+    ) +
+    geom_line(
+      aes(group = Exact.Site),
+      size = 2
+    ) +
+  theme_classic()
+  
+  
 ########## 9. Plot Abundance with pm2.5 across dates for each site   
 
 # 9a. Computing scaling factor for PM2.5       
@@ -410,7 +433,7 @@ pm2.5 <- read.csv("https://raw.githubusercontent.com/ehornalowell/CIBI-Air-Quali
    
    scale_factor.c <- max_Abundance / max_pm25
    
-   # 8b. create faceted dual axis plot- abundance and pm2.5 values over time. 
+# 9b. create faceted dual axis plot- abundance and pm2.5 values over time. 
   p_abund <- ggplot(site_month_dataUSE, aes(x = Month_Year, color = Exact.Site)) +
      # Shannon diversity — solid line
      geom_line(
@@ -451,6 +474,16 @@ pm2.5 <- read.csv("https://raw.githubusercontent.com/ehornalowell/CIBI-Air-Quali
        legend.position = "bottom"
      )
    
+# 9c. Scatterplot
 
+  ggplot(site_month_dataUSE, aes(x = GWRPM25.ugm.3, y = Abundance, color = Exact.Site)) +
+    geom_point(
+      aes(group = Exact.Site)
+    ) +
+    geom_line(
+      aes(group = Exact.Site),
+      size = 2
+    ) +
+  theme_classic()
    
    
