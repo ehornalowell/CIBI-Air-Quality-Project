@@ -214,7 +214,7 @@ sdnhm_noNABINs <- sdnhm_obs_mal %>%
     
 ######### 4. calculating diversity measures
 
-# 4a. Calculating Abundance for every unique month_year * exact.site combination (aka for every month at every site)
+# 4a (i). Calculating Abundance for every unique month_year * exact.site combination (aka for every month at every site)
     abund <- clean_sdnhm_noNABIN %>%
       group_by(Exact.Site, Month_Year)%>%
       summarize(Abundance = n(),
@@ -223,8 +223,15 @@ sdnhm_noNABINs <- sdnhm_obs_mal %>%
     #joining column back to original dataframe clean_sdnhm_noNABIN
     clean_sdnhm_noNABIN <- clean_sdnhm_noNABIN %>%
       left_join(abund, by = c("Exact.Site", "Month_Year"))
-      
-# 4b. Calculating Species Richness for every unique month_year * exact.site combination (aka for every month at every site)
+    
+# 4a (ii). Calculating abundance for every unique month_year * exact.site combination for each Order. 
+    abund_orders <- clean_sdnhm_noNABIN %>%
+      group_by(Exact.Site, Month_Year, Order) %>%
+      summarize(Abundance = n(),
+                .groups = "drop")
+    
+    
+# 4b (i). Calculating Species Richness for every unique month_year * exact.site combination (aka for every month at every site)
    spr <- clean_sdnhm_noNABIN %>%
      group_by(Exact.Site, Month_Year) %>%
      summarize(Species_Richness = n_distinct(BIN),
@@ -233,9 +240,15 @@ sdnhm_noNABINs <- sdnhm_obs_mal %>%
    # joining column back to original dataframe clean_sdnhm_noNABIN
    clean_sdnhm_noNABIN <- clean_sdnhm_noNABIN %>%
    left_join(spr, by = c("Exact.Site", "Month_Year"))
+
+# 4b (ii). Calculating Species Richness for every unique month_year * exact.site combination for each Order
+   spr_orders <- clean_sdnhm_noNABIN %>%
+     group_by(Exact.Site, Month_Year, Order) %>%
+     summarize(Species_Richness = n_distinct(BIN),
+               .groups = "drop") 
    
-# 4c. Calculating Shannon Diversity Index
- 
+   
+# 4c (i). Calculating Shannon Diversity Index using vegan() pacakage
    sdiv <- clean_sdnhm_noNABIN %>%
      #count individuals per bin per site per month
      group_by(Exact.Site, Month_Year, BIN) %>%
@@ -249,6 +262,15 @@ sdnhm_noNABINs <- sdnhm_obs_mal %>%
   # add shannon diversity index to clean_sdnhm_noNABIN dataframe 
    clean_sdnhm_noNABIN <- clean_sdnhm_noNABIN %>%
      left_join(sdiv, by = c("Exact.Site", "Month_Year"))
+
+# 4c (ii). Calculating Shannon.Diversity Index for month_year * exact.site combination for each Order
+   sdiv_orders <- clean_sdnhm_noNABIN %>%
+     group_by(Exact.Site, Month_Year, Order, BIN) %>%
+     summarise(BIN_abundance = n(),
+               .groups = "drop") %>%
+     group_by(Exact.Site, Month_Year, Order) %>%
+     summarise(Shannon_Diversity = diversity(BIN_abundance, index = "shannon"),
+               .groups = "drop")
 
 ######################################################################################################################
 ##################################### Load in PM2.5 data ############################################################# 
@@ -290,6 +312,7 @@ pm2.5 <- read.csv("https://raw.githubusercontent.com/ehornalowell/CIBI-Air-Quali
        GWRPM25.ugm.3
      )
 
+# 6f. create dataframe with date, site, order, diversity measures, pm2.5 measures. 
    
 ###########################################################################################################################
 ################################## Insect diversity and PM2.5 data visualization ############################################
