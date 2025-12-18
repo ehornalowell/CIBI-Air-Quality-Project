@@ -384,7 +384,8 @@ pm2.5 <- read.csv("https://raw.githubusercontent.com/ehornalowell/CIBI-Air-Quali
     ggplot(site_month_dataUSE, aes(x = GWRPM25.ugm.3, y = Shannon.Diversity, color = Exact.Site)) +
       geom_point(
         aes(group = Exact.Site)
-      ) #
+      ) +
+     #
      # geom_line(
      #   aes(group = Exact.Site),
      #   size = 2
@@ -500,12 +501,55 @@ pm2.5 <- read.csv("https://raw.githubusercontent.com/ehornalowell/CIBI-Air-Quali
     geom_point(
       aes(group = Exact.Site)
     ) +
-    geom_line(
-      aes(group = Exact.Site),
-      size = 2
-    ) +
+    #geom_line(
+    # aes(group = Exact.Site),
+    #  size = 2
+    #) +
   theme_classic()
   
+# 8d. scatterplot for dip, lep, coleo
+  ## Diptera: 
+  site_month_order_df %>%
+    mutate(highlight = ifelse(Order == "Diptera", "Diptera", "Other")) %>%
+    ggplot(aes(x = GWRPM25.ugm.3, y = Species_Richness, color = highlight)) +
+    geom_point() +
+    scale_color_manual(values = c("Diptera" = "blue4", "Other" = "lightgrey")) +
+    theme_classic() +
+    labs(color = "")
+  ## Lepidoptera: 
+  site_month_order_df %>%
+    mutate(highlight = ifelse(Order == "Lepidoptera", "Lepidoptera", "Other")) %>%
+    ggplot(aes(x = GWRPM25.ugm.3, y = Species_Richness, color = highlight)) +
+    geom_point() +
+    scale_color_manual(values = c("Lepidoptera" = "purple3", "Other" = "lightgrey")) +
+    theme_classic() +
+    labs(color = "")
+  ## Coleoptera:
+  site_month_order_df %>%
+    mutate(highlight = ifelse(Order == "Coleoptera", "Coleoptera", "Other")) %>%
+    ggplot(aes(x = GWRPM25.ugm.3, y = Species_Richness, color = highlight)) +
+    geom_point() +
+    scale_color_manual(values = c("Coleoptera" = "red", "Other" = "lightgrey")) +
+    theme_classic() +
+    labs(color = "")
+  ## Hymenoptera    
+  site_month_order_df %>%
+    mutate(highlight = ifelse(Order == "Hymenoptera", "Hymenoptera", "Other")) %>%
+    ggplot(aes(x = GWRPM25.ugm.3, y = Species_Richness, color = highlight)) +
+    geom_point() +
+    scale_color_manual(values = c("Hymenoptera" = "turquoise3", "Other" = "lightgrey")) +
+    theme_classic() +
+    labs(color = "")
+
+# 8e. all four orders, dip, lep, coleo, hym on same fig - scatterplot, pm2.5 vs shannon div.
+
+  site_month_order_df %>%
+    mutate(Order_group = ifelse(Order %in% names(focal_colors)[1:4], Order, "Other")) %>%
+    ggplot(aes(x = GWRPM25.ugm.3, y = Species_Richness, color = Order_group)) +
+    geom_point() +
+    scale_color_manual(values = focal_colors) +
+    theme_classic() +
+    labs(color = "Order") 
   
 ########## 9. Plot Abundance with pm2.5 across dates for each site   
 
@@ -561,10 +605,54 @@ pm2.5 <- read.csv("https://raw.githubusercontent.com/ehornalowell/CIBI-Air-Quali
     geom_point(
       aes(group = Exact.Site)
     ) +
-    geom_line(
-      aes(group = Exact.Site),
-      size = 2
-    ) +
+    #geom_line(
+    #  aes(group = Exact.Site),
+    #  size = 2
+    #) +
   theme_classic()
    
-   
+# 9d. scatterplot for dip, lep, coleo
+  ## Diptera: 
+  site_month_order_df %>%
+    mutate(highlight = ifelse(Order == "Diptera", "Diptera", "Other")) %>%
+    ggplot(aes(x = GWRPM25.ugm.3, y = Abundance, color = highlight)) +
+    geom_point() +
+    scale_color_manual(values = c("Diptera" = "blue4", "Other" = "lightgrey")) +
+    theme_classic() +
+    labs(color = "")
+  ## Lepidoptera: 
+  site_month_order_df %>%
+    mutate(highlight = ifelse(Order == "Lepidoptera", "Lepidoptera", "Other")) %>%
+    ggplot(aes(x = GWRPM25.ugm.3, y = Abundance, color = highlight)) +
+    geom_point() +
+    scale_color_manual(values = c("Lepidoptera" = "purple3", "Other" = "lightgrey")) +
+    theme_classic() +
+    labs(color = "")
+  ## Coleoptera:
+  site_month_order_df %>%
+    mutate(highlight = ifelse(Order == "Coleoptera", "Coleoptera", "Other")) %>%
+    ggplot(aes(x = GWRPM25.ugm.3, y = Abundance, color = highlight)) +
+    geom_point() +
+    scale_color_manual(values = c("Coleoptera" = "red", "Other" = "lightgrey")) +
+    theme_classic() +
+    labs(color = "")
+  ## Hymenoptera    
+  site_month_order_df %>%
+    mutate(highlight = ifelse(Order == "Hymenoptera", "Hymenoptera", "Other")) %>%
+    ggplot(aes(x = GWRPM25.ugm.3, y = Species_Richness, color = highlight)) +
+    geom_point() +
+    scale_color_manual(values = c("Hymenoptera" = "turquoise3", "Other" = "lightgrey")) +
+    theme_classic() +
+    labs(color = "")
+
+  
+# 9e. all four orders, dip, lep, coleo, hym on same fig - scatterplot, pm2.5 vs shannon div.
+  
+  site_month_order_df %>%
+    mutate(Order_group = ifelse(Order %in% names(focal_colors)[1:4], Order, "Other")) %>%
+    ggplot(aes(x = GWRPM25.ugm.3, y = Abundance, color = Order_group)) +
+    geom_point() +
+    scale_color_manual(values = focal_colors) +
+    theme_classic() +
+    labs(color = "Order")    
+  
