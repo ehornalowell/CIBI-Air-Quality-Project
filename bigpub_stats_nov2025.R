@@ -424,6 +424,38 @@ sdnhm_noNABINs <- sdnhm_obs_mal %>%
 clean_METdata <- METdata %>%
      filter(year(month) == 2023)
    
+   Meteor.pca.all <- PCA(clean_METdata[ ,c(6:14)], scale = TRUE)
+   # categorized by month
+   fviz_pca_ind(Meteor.pca.all, label = "none", habillage = clean_METdata$month, geom.ind = "point", pointsize = 4, shape.ind = 16)
+   #categorized by site
+   fviz_pca_ind(Meteor.pca.all, habillage = clean_METdata$site.name, label ="none", addEllipses = TRUE, ellipse.level = 0.95, pointsize = 4)
+   # site including loadings 
+   fviz_pca_biplot(
+  Meteor.pca.all,
+  habillage = clean_METdata$site.name,
+  label = "var",
+  repel = TRUE,
+  col.var = "black",
+  arrowsize = 0.7,
+addEllipses = TRUE,
+ellipse.level = 0.95,
+  pointsize = 4
+)
+  #removing vapor ressure deficit and surface downwelling shortwave flux
+   meteor.pca.edits <- PCA(clean_METdata[ ,c(6:8, 10:12, 14)], scale = TRUE)
+   # site including loadings 
+   fviz_pca_biplot(
+    meteor.pca.edits,
+     habillage = clean_METdata$site.name,
+     label = "var",
+     repel = TRUE,
+     col.var = "black",
+     arrowsize = 0.7,
+     addEllipses = TRUE,
+     ellipse.level = 0.95,
+     pointsize = 4
+   )
+   
    METpca. <- prcomp(clean_METdata[ ,c(6:14)], scale. = TRUE)
    biplot(METpca.)
    METpca1 <- prcomp(clean_METdata[ ,c(6:8, 10:12, 13)], scale. = TRUE)
