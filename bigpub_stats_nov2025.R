@@ -388,8 +388,9 @@ sdnhm_noNABINs <- sdnhm_obs_mal %>%
    
    
    
-   METpca <- pca(METdata[ ,6:14])
+   METpca <- prcomp(METdata[ ,6:14], scale. = TRUE)
    biplot(METpca)
+ 
    
    METpca.2 <- pca(METdata[ ,c(6:8, 10:12, 14)])
    biplot(METpca)
