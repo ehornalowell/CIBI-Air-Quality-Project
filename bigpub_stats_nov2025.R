@@ -386,6 +386,15 @@ sdnhm_noNABINs <- sdnhm_obs_mal %>%
 ##########################################################################################################################################################
 ############################################## Correlation matrix of abiotic variables ##################################
    
+   
+   
+   METpca <- pca(METdata[ ,6:14])
+   biplot(METpca)
+   
+   METpca.2 <- pca(METdata[ ,c(6:8, 10:12, 14)])
+   biplot(METpca)
+   
+      
 #1. CORR FOR METEOROLOGICAL DATASET
    
 # 1a.  correlation of meteorological dataset excluding first few columns with dates on/off, site names, etc. 
