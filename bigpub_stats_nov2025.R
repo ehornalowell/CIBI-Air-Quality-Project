@@ -386,15 +386,6 @@ sdnhm_noNABINs <- sdnhm_obs_mal %>%
 ##########################################################################################################################################################
 ############################################## Correlation matrix of abiotic variables ##################################
    
-   
-   
-   METpca <- prcomp(METdata[ ,6:14], scale. = TRUE)
-   biplot(METpca)
- 
-   
-   METpca.2 <- pca(METdata[ ,c(6:8, 10:12, 14)])
-   biplot(METpca)
-   
       
 #1. CORR FOR METEOROLOGICAL DATASET
    
@@ -426,6 +417,18 @@ sdnhm_noNABINs <- sdnhm_obs_mal %>%
    a.v.corr <- cor(clean.abiotic.data[, 3:9], method = "pearson")
    corrplot(a.v.corr, tl.cex = 0.6, method = 'number')
 
+#############################################################################################################################################################
+############################################## PCA for metereological data #########################################################################################
+
+   ##subset 2023 metereological data only
+clean_METdata <- METdata %>%
+     filter(year(month) == 2023)
+   
+   METpca. <- prcomp(clean_METdata[ ,c(6:14)], scale. = TRUE)
+   biplot(METpca.)
+   METpca1 <- prcomp(clean_METdata[ ,c(6:8, 10:12, 13)], scale. = TRUE)
+   biplot(METpca1)
+   summary(METpca1)
    
 ###################################################################################################################################################
 ####################################### combining abiotic and biotic data into a single dataframe ###################################################
