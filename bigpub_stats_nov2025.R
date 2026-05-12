@@ -418,13 +418,14 @@ sdnhm_noNABINs <- sdnhm_obs_mal %>%
    corrplot(a.v.corr, tl.cex = 0.6, method = 'number')
 
 #############################################################################################################################################################
-############################################## PCA for metereological data #########################################################################################
+############################################## PCA for meteorological data #########################################################################################
 
-   ##subset 2023 metereological data only
+##subset dataset to only include data collected in 2023 
 clean_METdata <- METdata %>%
      filter(year(month) == 2023)
-   
+## PCA on all variables in 2023 dataset   
    Meteor.pca.all <- PCA(clean_METdata[ ,c(6:14)], scale = TRUE)
+## Figures:   
    # categorized by month
    fviz_pca_ind(Meteor.pca.all, label = "none", habillage = clean_METdata$month, geom.ind = "point", pointsize = 4, shape.ind = 16)
    #categorized by site
@@ -441,9 +442,11 @@ addEllipses = TRUE,
 ellipse.level = 0.95,
   pointsize = 4
 )
-  #removing vapor ressure deficit and surface downwelling shortwave flux
+
+## PCA on variables in 2023 dataset:REMOVING vapor pressure deficit and surface downwelling shortwave flux
    meteor.pca.edits <- PCA(clean_METdata[ ,c(6:8, 10:12, 14)], scale = TRUE)
-   # site including loadings 
+##F Figures: 
+    # site including loadings 
    fviz_pca_biplot(
     meteor.pca.edits,
      habillage = clean_METdata$site.name,
@@ -455,12 +458,64 @@ ellipse.level = 0.95,
      ellipse.level = 0.95,
      pointsize = 4
    )
+   # scree plot- graph of eigenvalues/variances associated with components
+   eigenvalues.pca.edits <- meteor.pca.edits$eig   
+   barplot(eigenvalues.pca.edits[ , 2], names.arg = 1:nrow(eigenvalues.pca.edits),
+           main = "Variances",
+           xlab = "Principal components", 
+           ylab = "Percentage of variances",
+           col = "steelblue") +
+     lines(x = 1:nrow(eigenvalues.pca.edits), eigenvalues.pca.edits[ , 2],
+           type = "b", pch = 19, col = "red")
+   # variable contribution figure - PC1
+   fviz_contrib(meteor.pca.edits, choice = "var", axes = 1)
+   # variable contribution figure - PC2
+   fviz_contrib(meteor.pca.edits, choice = "var", axes = 2)
    
-   METpca. <- prcomp(clean_METdata[ ,c(6:14)], scale. = TRUE)
-   biplot(METpca.)
-   METpca1 <- prcomp(clean_METdata[ ,c(6:8, 10:12, 13)], scale. = TRUE)
-   biplot(METpca1)
-   summary(METpca1)
+## PCA on variables using in final model (max rel humidity, max air temp, wind speed, precip accumulation)
+   meteor.pca.filtered <- PCA(clean_METdata[ ,c(6, 7, 11, 14)], scale = TRUE)
+## Figures:
+   #- colored by EXACT.SITE - and include variable loadings
+   fviz_pca_biplot(
+     meteor.pca.filtered,
+     #individuals
+     habillage = clean_METdata$site.name,
+     geom.ind = "point",
+     pointshape = 16,
+     pointsize = 4,
+     palette = scales::hue_pal()(length(unique(clean_METdata$month))),
+    addEllipses = TRUE,
+    ellipse.level = 0.95,
+    axes = c(1, 3),
+     #variables
+     label = "var",
+     repel = TRUE,
+     col.var = "black",
+     arrowsize = 0.7
+   )
+   #scree plot
+   barplot(eigenvalues.pca.filtered[ , 2], names.arg = 1:nrow(eigenvalues.pca.filtered)) +
+             lines(x = 1:nrow(eigenvalues.pca.filtered), eigenvalues.pca.filtered[ , 2],
+                   type = "b", pch = 19, col = "red")
+   
+   
+  #Figure: individual MONTHS and variable loadings 
+   fviz_pca_biplot(
+     meteor.pca.filtered,
+     # individuals
+     habillage = clean_METdata$month,
+     addEllipses = FALSE,
+     geom.ind = "point",
+     pointshape = 16,
+     pointsize = 4,
+     palette = scales::hue_pal()(length(unique(clean_METdata$month))),
+     # variables
+     label = "var",
+     col.var = "black",
+     repel = TRUE,
+     arrowsize = 0.7
+   )
+   
    
 ###################################################################################################################################################
 ####################################### combining abiotic and biotic data into a single dataframe ###################################################
