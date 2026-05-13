@@ -8,7 +8,7 @@ rm(list = ls()) # clear working environment
 ############################## load packages ###########################################
 
 #library(dplyr) #QC/QA
-#library(tidyr) #QC/QA
+$library(tidyr) #QC/QA
 #library(ggplot2) # figs
 ##library(patchwork) # simple way to combine separate ggplots into same graphic
 #library(vegan) # shannon diversity calculation
@@ -474,6 +474,13 @@ ellipse.level = 0.95,
    
 ## PCA on variables using in final model (max rel humidity, max air temp, wind speed, precip accumulation)
    meteor.pca.filtered <- PCA(clean_METdata[ ,c(6, 7, 11, 14)], scale = TRUE)
+   # Extract individual PCA scores (site/month combinations)
+   pca_scores <- as.data.frame(meteor.pca.filtered$ind$coord) %>%
+     select(PC1 = Dim.1, PC2 = Dim.2)
+   # Add PCs back to original dataframe
+   clean_METdata_pca <- bind_cols(clean_METdata, pca_scores)
+   
+   
 ## Figures:
    #- colored by EXACT.SITE - and include variable loadings
    fviz_pca_biplot(
@@ -498,7 +505,6 @@ ellipse.level = 0.95,
              lines(x = 1:nrow(eigenvalues.pca.filtered), eigenvalues.pca.filtered[ , 2],
                    type = "b", pch = 19, col = "red")
    
-   
   #Figure: individual MONTHS and variable loadings 
    fviz_pca_biplot(
      meteor.pca.filtered,
@@ -515,7 +521,8 @@ ellipse.level = 0.95,
      repel = TRUE,
      arrowsize = 0.7
    )
-   
+
+   ## extract loadings/eigenvalues for model   
    
 ###################################################################################################################################################
 ####################################### combining abiotic and biotic data into a single dataframe ###################################################
