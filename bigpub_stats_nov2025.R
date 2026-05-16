@@ -7,16 +7,16 @@ rm(list = ls()) # clear working environment
 ############################################################################################
 ############################## load packages ###########################################
 
-#library(dplyr) #QC/QA
-$library(tidyr) #QC/QA
-#library(ggplot2) # figs
-##library(patchwork) # simple way to combine separate ggplots into same graphic
-#library(vegan) # shannon diversity calculation
-#library(lubridate) # formatting dates 
-#library(purrr)
-#library(corrplot) # correlation matrix visualizations
-
-
+library(dplyr) #QC/QA
+library(tidyr) #QC/QA
+library(ggplot2) # figs
+#library(patchwork) # simple way to combine separate ggplots into same graphic
+library(vegan) # shannon diversity calculation
+library(lubridate) # formatting dates
+library(purrr)
+library(corrplot) # correlation matrix visualizations
+library(factoextra) # PCA visualizations
+library(FactoMineR)
 
 #########################################################################################
 ############################### read in barcode data ################################################
@@ -493,7 +493,7 @@ ellipse.level = 0.95,
      palette = scales::hue_pal()(length(unique(clean_METdata$month))),
     addEllipses = TRUE,
     ellipse.level = 0.95,
-    axes = c(1, 3),
+    axes = c(1, 2),
      #variables
      label = "var",
      repel = TRUE,
