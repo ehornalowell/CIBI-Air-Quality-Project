@@ -15,8 +15,13 @@ library(vegan) # shannon diversity calculation
 library(lubridate) # formatting dates
 library(purrr)
 library(corrplot) # correlation matrix visualizations
+<<<<<<< HEAD
 library(factoextra) # PCA visualizations
 library(FactoMineR)
+=======
+
+
+>>>>>>> 4e9f74c (updating dataframes)
 
 #########################################################################################
 ############################### read in barcode data ################################################
@@ -284,6 +289,16 @@ sdnhm_noNABINs <- sdnhm_obs_mal %>%
      summarise(Shannon_Diversity = diversity(BIN_abundance, index = "shannon"),
                .groups = "drop")
 
+# 4d combine abundance, species richness, and shannon biodiversity dataframes by site*datee*order into a single dataframe   
+  stats_df <- sdiv_orders %>%
+    left_join(spr_orders, by = c("Exact.Site", "Month_Year", "Order")) %>%
+    left_join(abund_orders, by = c("Exact.Site", "Month_Year", "Order"))
+  #################################################################
+  ###### use this DF for lms 
+  ################################################################
+  
+  
+  
 ######################################################################################################################
 ##################################### Load in PM2.5 data ############################################################# 
    
@@ -291,7 +306,7 @@ sdnhm_noNABINs <- sdnhm_obs_mal %>%
  ## previous pm2.5 data without sep-aug 2022 data -- pm2.5 <- read.csv("https://raw.githubusercontent.com/ehornalowell/CIBI-Air-Quality-Project/main/data/abiotic_var/SDNHM.sites_V5GL0502.csv")
  pm2.5 <- read.csv("https://raw.githubusercontent.com/ehornalowell/CIBI-Air-Quality-Project/main/data/abiotic_var/SDNHM.sites_V5GL0502.HybridPM25_alldates.csv")   
 
-   ###### 6. CLEAN pm2.5 data
+###### 6. CLEAN pm2.5 data
 
 # 6a. convert month column format to month_year 
    pm2.5_dates <- pm2.5 %>%
@@ -326,20 +341,31 @@ sdnhm_noNABINs <- sdnhm_obs_mal %>%
        GWRPM25.ugm.3
      )
 
-# 6f. create dataframe with date, site, order, diversity measures, pm2.5 measures. 
+# 6f. (i)  create dataframe with date, site, order, diversity measures, pm2.5 measures. 
    site_month_order_div_df <- list(sdiv_orders, spr_orders, abund_orders) %>%   # first all diversity measures 
      reduce(left_join, by = c("Exact.Site", "Month_Year", "Order"))
    site_month_order_df <- site_month_order_div_df %>%                           # add pm2.5 data
      left_join(clean_pm2.5, by = c("Exact.Site", "Month_Year"))
    
-   #convert month_date into real dates and put them in chronological order
-   site_month_dataUSE <- site_month_dataUSE %>%
-     mutate(
-       Month_Year_date = parse_date_time(Month_Year, "b-y") # "Aug-22" is a real date
-     ) %>%
-     arrange(Month_Year_date) %>%
-     mutate(Month_Year = factor(Month_Year, levels = unique(Month_Year))) %>%
-     rename(PM2.5 = GWRPM25.ugm.3)
+# 6f. (ii) #convert month_date into real dates and put them in chronological order for both DF "site_month_dataUSE" and "site_month_order_df"
+   
+       # converting month_date for DF = site_month_dataUSE 
+       site_month_dataUSE <- site_month_dataUSE %>%
+         mutate(
+           Month_Year_date = parse_date_time(Month_Year, "b-y") # "Aug-22" is a real date
+         ) %>%
+         arrange(Month_Year_date) %>%
+         mutate(Month_Year = factor(Month_Year, levels = unique(Month_Year))) %>%
+         rename(PM2.5 = GWRPM25.ugm.3)
+       
+       # converting month_date for DF = site_month_order_df 
+       site_month_orderUSE <- site_month_order_df %>%
+         mutate(
+           Month_Year_date = parse_date_time(Month_Year, "b-y") # "Aug-22" is a real date
+         ) %>%
+         arrange(Month_Year_date) %>%
+         mutate(Month_Year = factor(Month_Year, levels = unique(Month_Year))) %>%
+         rename(PM2.5 = GWRPM25.ugm.3)
    
 ####################################################################################################################################
 ################################## Load in SMOKE and metDATA#######################################################
@@ -375,9 +401,10 @@ sdnhm_noNABINs <- sdnhm_obs_mal %>%
    abiotic.data <- clean_pm2.5 %>%
      left_join(s.met.data, by = c("Month_Year", "Exact.Site"))
 # c. remove rows with NA values created when combining both dataframes. 
-   clean.abiotic.data <- na.omit(abiotic.data)
+   # clean.abiotic.data <- na.omit(abiotic.data) ##### not sure if I want to omit NA because that deletes the date*site row and we have div/spr/abund measures for all date*site combinations ######
+   
    # remove columns that are not necessary for correlation matrix
-   clean.abiotic.data <- clean.abiotic.data[, c(1:4, 10:12, 15, 18)]
+   clean.abiotic.data <- abiotic.data[, c(1:4, 10:12, 15, 18)]
    #switch column order to be cleaner
    clean.abiotic.data <- clean.abiotic.data %>%
      relocate("Month_Year", .before = "GWRPM25.ugm.3") %>%
@@ -479,7 +506,12 @@ ellipse.level = 0.95,
      select(PC1 = Dim.1, PC2 = Dim.2)
    # Add PCs back to original dataframe
    clean_METdata_pca <- bind_cols(clean_METdata, pca_scores)
-   
+   #save csv
+   write.csv(
+     clean_METdata_pca,
+     "data/abiotic_var/gridMET_SDNHMsites_monthlyvalues_13may26.csv",
+     row.names = FALSE
+   )
    
 ## Figures:
    #- colored by EXACT.SITE - and include variable loadings
