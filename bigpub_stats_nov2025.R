@@ -15,13 +15,8 @@ library(vegan) # shannon diversity calculation
 library(lubridate) # formatting dates
 library(purrr)
 library(corrplot) # correlation matrix visualizations
-<<<<<<< HEAD
 library(factoextra) # PCA visualizations
 library(FactoMineR)
-=======
-
-
->>>>>>> 4e9f74c (updating dataframes)
 
 #########################################################################################
 ############################### read in barcode data ################################################
@@ -78,7 +73,10 @@ sdnhm_noNABINs <- sdnhm_obs_mal %>%
     clean_sdnhm_noNABIN <- no.NA.BINs_month.year %>%
       select(-c(Project.Code, Identifier, Collectors, Collection.Date.y, Elev, Collection.Date.Accuracy, Habitat, Sampling.Protocol))
 
-    
+# 2g. Subset dataset to only rows from 02-2023 to 10-2023
+    clean_sdnhm_noNABIN <- clean_sdnhm_noNABIN %>%
+      filter(Month_Year %in% c("Feb-23","Mar-23","Apr-23","May-23",
+                               "Jun-23","Jul-23","Aug-23","Sep-23","Oct-23"))
     
     
 
@@ -93,11 +91,11 @@ sdnhm_noNABINs <- sdnhm_obs_mal %>%
 # 3c. number of specimens ID to Fam, Subfam, Genus, Species -- bar graph
     id.stats <- clean_sdnhm_noNABIN %>%
       summarise(across(everything(), ~sum(!is.na(.) & . !="")))
-          ## specimens ID to Order = ALL 86617
-          ## specimens ID to Family = 84477
-          ## specimens ID to Subfamily = 39871
-          ## specimens ID to Genus = 35892
-          ## specimens ID to Species = 15798
+          ## specimens ID to Order = ALL 71223
+          ## specimens ID to Family = 69299
+          ## specimens ID to Subfamily = 32224
+          ## specimens ID to Genus = 28143
+          ## specimens ID to Species = 12848
     
     # make df long for fig
     id.stats.long <- id.stats %>%
@@ -289,10 +287,27 @@ sdnhm_noNABINs <- sdnhm_obs_mal %>%
      summarise(Shannon_Diversity = diversity(BIN_abundance, index = "shannon"),
                .groups = "drop")
 
-# 4d combine abundance, species richness, and shannon biodiversity dataframes by site*datee*order into a single dataframe   
+# 4d combine abundance, species richness, and shannon biodiversity dataframes by site*date*order into a single dataframe   
   stats_df <- sdiv_orders %>%
     left_join(spr_orders, by = c("Exact.Site", "Month_Year", "Order")) %>%
     left_join(abund_orders, by = c("Exact.Site", "Month_Year", "Order"))
+  
+# 4e. change Exact.Site names in stats_df to acronyms so it will match num.days.on.trap_df and I can successfully join both DFs
+  stats_df<- stats_df %>%
+    mutate(Exact.Site = recode(Exact.Site, "Anza Borrego UC Reserve" = "ABUCR", "Picacho State Park" = "PSP", "Wheatley Ranch" = "WR", "Tierra Del Sol SDAA" = "TDS", "Lopez Ridge Vernal Pools" = "LRVP"))
+  
+# 4e load # of days on trap csv and then join # of days on trap csv to stats_df - will use # of days on trap as variable in model
+    #read in csv from github repo
+    num.days.on.trap_df <- read.csv("https://raw.githubusercontent.com/ehornalowell/CIBI-Air-Quality-Project/refs/heads/main/data/sampling_days.csv") 
+    num.days.on.trap_df <- num.days.on.trap_df %>% rename(Exact.Site = Site) #rename column so it matches stats_df column name
+    #subset data for Feb-23 through Oct-23
+    num.days.on.trap_df <- num.days.on.trap_df%>%
+      filter(Month_Year %in% c("Feb-23","Mar-23","Apr-23","May-23",
+                               "Jun-23","Jul-23","Aug-23","Sep-23","Oct-23"))
+    
+    #join both dfs
+    stats_df <- stats_df %>%
+      left_join(num.days.on.trap_df, by = c("Exact.Site", "Month_Year"))
   #################################################################
   ###### use this DF for lms 
   ################################################################
@@ -308,11 +323,16 @@ sdnhm_noNABINs <- sdnhm_obs_mal %>%
 
 ###### 6. CLEAN pm2.5 data
 
-# 6a. convert month column format to month_year 
+# 6a (i) convert month column format to month_year 
    pm2.5_dates <- pm2.5 %>%
      mutate(
        Month_Year = format(ymd(month), "%b-%y")
      )
+# 6a (ii) subset data for feb-23 through oct-23     
+   pm2.5_dates<- pm2.5_dates %>%
+     filter(Month_Year %in% c("Feb-23","Mar-23","Apr-23","May-23",
+                              "Jun-23","Jul-23","Aug-23","Sep-23","Oct-23"))
+   
    
 # 6b. Change Tierra Del Sol to Tierra Del Sol SDAA to match clean_sdnhm_noNABIN dataframe before merging
    pm2.5_dates <- pm2.5_dates %>%
@@ -321,10 +341,11 @@ sdnhm_noNABINs <- sdnhm_obs_mal %>%
    
 # 6c. remove columns i don't need for analysis
    clean_pm2.5 <- pm2.5_dates %>%
-     select(-c("month", "Site.Code"))
-
+     select(-c("month", "Exact.Site")) %>% 
+     rename(Exact.Site = Site.Code) 
+     
 # 6d. combine clean_pm2.5 dataframe and clean_sdnhm_noNABIN dataframe 
-   combined_poll.div <- clean_sdnhm_noNABIN %>%
+   stats_df <- stats_df %>%
      left_join(clean_pm2.5, by = c("Exact.Site", "Month_Year"))
 
 # 6e. create dataframe with date, site, diversity measures, pm2.5 measures
@@ -341,9 +362,8 @@ sdnhm_noNABINs <- sdnhm_obs_mal %>%
        GWRPM25.ugm.3
      )
 
-# 6f. (i)  create dataframe with date, site, order, diversity measures, pm2.5 measures. 
-   site_month_order_div_df <- list(sdiv_orders, spr_orders, abund_orders) %>%   # first all diversity measures 
-     reduce(left_join, by = c("Exact.Site", "Month_Year", "Order"))
+# 6f. (i) add pm2.5 measures to stats_df 
+
    site_month_order_df <- site_month_order_div_df %>%                           # add pm2.5 data
      left_join(clean_pm2.5, by = c("Exact.Site", "Month_Year"))
    
