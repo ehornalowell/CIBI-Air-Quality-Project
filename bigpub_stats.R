@@ -228,7 +228,7 @@ ggplot(tax_summary_site,
 
 # 4a. Calculating abundance for every unique month_year * exact.site combination for each Order. 
 abund_orders <- clean_sdnhm_noNABIN %>%
-  filter(Order %in% c("Diptera", "Hymenoptera", "Leipdoptera", "Hemiptera", "Coleoptera")) %>% #Filter out five orders will use in downstream analysis
+  #filter(Order %in% c("Diptera", "Hymenoptera", "Leipdoptera", "Hemiptera", "Coleoptera")) %>% #Filter out five orders will use in downstream analysis
   group_by(Exact.Site, Month_Year, Order) %>%
   summarize(Abundance = n(),
             .groups = "drop")
@@ -423,13 +423,20 @@ clean.abiotic.data <- abiotic.data[, c(1:4, 10:12, 15, 18)]
   Final.Fig.SI.1 <- fig.SI.1 +
     scale_color_manual(values = rep("black", 5)) + #set all site symbol colors = black. # of symbols = # of unique sites, sites to be distinguished by shape.
     scale_shape_manual(values = c(16, 17, 15, 18, 0)) + #assign specific point shapes to site
-    labs(colour = "Sites", shape = "Sites") + #rename color and shape legend title to "Sites"
-    scale_fill_discrete(guide = "none") #remove fill legend, aka default grouping legend ("Groups") that fviz_pca_biplot() creates when using habillage
+    labs(colour = "Sites", shape = "Sites", title = NULL) + #rename color and shape legend title to "Sites"
+    scale_fill_discrete(guide = "none")  #remove fill legend, aka default grouping legend ("Groups") that fviz_pca_biplot() creates when using habillage
+    
   ## Export fig.
   ggsave("Fig.SI.1.pdf",
          plot = Final.Fig.SI.1,
          width = 18,
          height = 22,
+         units = "cm")
+  ## Export fig to downloads folder as png
+  ggsave("~/Downloads/Fig.SI.1.biplot.png",
+         plot = Final.Fig.SI.1,
+         width = 18,
+         height = 22, 
          units = "cm")
   
   # scree plot- graph of eigenvalues/variances associated with components
@@ -437,13 +444,18 @@ clean.abiotic.data <- abiotic.data[, c(1:4, 10:12, 15, 18)]
            barfill = "black",
            barcolor = "black",
            linecolor = "red") +
-    labs(title = NULL, x = "Principle Components", y = "Percentage of variances explained") +
+    labs(title = NULL, x = "Principle Components", y = "Percentage of variance explained") +
     theme_classic()
   ##Export Fig
   ggsave("Fig.SI.2.pdf",
          plot = Final.Fig.SI.2,
          width = 11,
          height = 11,
+         units = "cm")
+  ggsave("~/Downloads/Fig.SI.2.screeplot.png",
+         plot = Final.Fig.SI.2,
+         width = 18,
+         height = 22, 
          units = "cm")
   
   # variable contribution figure - PC1
@@ -503,4 +515,7 @@ clean.abiotic.data <- abiotic.data[, c(1:4, 10:12, 15, 18)]
 ##############################################      MODELS      ####################################################################################
 #############################################################################################################################################
   
-# 9. (a) 
+# 9. (a) Species Richness Model 
+  # GLM with Poisson distribution (because it is count data - counts can't be negative and are discrete integers)
+  sp.richness.glm <- glm(stats_df$Species_Richness ~ stats_df$PC1 + stats_df$PC2 + stats_df$Days_on_Trap +stats_df$GWRPM25.ugm.3 + stats_df$n_smoke, family = poisson, data = stats_df)
+  

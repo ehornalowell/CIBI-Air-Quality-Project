@@ -242,9 +242,6 @@ sdnhm_noNABINs <- sdnhm_obs_mal %>%
       group_by(Exact.Site, Month_Year, Order, BIN) %>%
       summarize(Abundnace = n(),
                 .groups = "drop") 
-    ##################################
-    ##### USE THIS to build DF for RL to run models for statistical analyses ######################
-    ######################################
 
 # 4b (i). Calculating Species Richness for every unique month_year * exact.site combination (aka for every month at every site)
    spr <- clean_sdnhm_noNABIN %>%
